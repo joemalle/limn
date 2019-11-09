@@ -1,20 +1,20 @@
 #include "limn.h"
 
 #include <cassert>
-#include <iostream>
-#include <optional>
 #include <string>
-
-using namespace lm;
 
 // Match "Hello", as many spaces as necessary, and then "World"
 bool isHelloWorld(std::string_view sv) {
-	return parse(sv, lit_("Hello") >> *space_ >> lit_("World"));
+	return lm::parse(sv, lm::lit_("Hello") >> *lm::space_ >> lm::lit_("World") >> lm::end_);
 }
+
+using namespace lm; // Laziness
 
 // return the word after the first space or an empty string
 // the second word must consist of printable characters
-std::string_view getSecondWord(std::string_view sv) {
+// note that you can make these beauties constexpr!
+// also note that lm:: doesn't use exceptions
+constexpr std::string_view getSecondWord(std::string_view sv) noexcept {
 	std::string_view secondWord;
 	parse(
 		sv,
@@ -25,14 +25,27 @@ std::string_view getSecondWord(std::string_view sv) {
 		}))[secondWord]
 		>> end_
 	);
-	return secondWord;		
+	return secondWord;
 }
 
 // return the word after "GET" or "POST"
-std::string_view getMatch(std::string_view sv) {
+constexpr std::string_view getMatch(std::string_view sv) noexcept {
     std::string_view out;
     parse(sv, (lit_("GET") | lit_("POST")) >> space_ >> (*alnum_)[out]);
     return out;
+}
+
+// Recursive example: match valid parentheses
+constexpr bool validParentheses(std::string_view& sv) {
+	return parse_ref(
+		sv,
+		+(lit_("()") | (char_('(') >> action_(validParentheses) >> char_(')')))
+	);
+}
+
+// Helper function to convert char* to string_view
+constexpr bool validParenthesesHelper(std::string_view sv) {
+	return validParentheses(sv);
 }
 
 int main () {
@@ -50,11 +63,18 @@ int main () {
 	assert(isHelloWorld("Hello World"));
 	assert(isHelloWorld("Hello \n\f\n\r\t\vWorld"));
 	assert(!isHelloWorld("World \n\f\n\r\t\vHello"));
-	assert(isHelloWorld("Hello \n\f\n\r\t\vWorld extra"));
+	assert(!isHelloWorld("Hello \n\f\n\r\t\vWorld extra"));
 	assert(getSecondWord("test").empty());
 	assert("2222" == getSecondWord("abcd 2222"));
 	assert("2222" == getSecondWord("abcd 2222 defg"));
 	assert("OK" == getMatch("GET OK"));
 	assert("OK" == getMatch("POST OK"));
 	assert(getMatch("NOPE OK").empty());
+	assert(validParenthesesHelper("()"));
+	assert(validParenthesesHelper("(())"));
+	assert(validParenthesesHelper("(())()"));
+	assert(!validParenthesesHelper("((())()"));
+	assert(!validParenthesesHelper(")(())()"));
+	assert(!validParenthesesHelper(""));
+	assert(!validParenthesesHelper("((((("));
 }

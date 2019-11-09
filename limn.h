@@ -5,134 +5,119 @@
 
 #pragma once
 
-#include <string_view>
 #include <cctype>
+#include <string_view>
+
+#ifndef _MSC_VER
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#endif
 
 namespace lm {
 	namespace impl {
 		template <typename Base>
 		struct parser_base {
-			auto operator*() const noexcept;
-			auto operator[](std::string_view&) const noexcept;
+			constexpr auto operator*() const noexcept;
+			constexpr auto operator+() const noexcept;
+			constexpr auto operator[](std::string_view&) const noexcept;
 		};
 	}
 
 	/// Match a single type of character
 	struct char_ final : public impl::parser_base<char_> {
-		explicit char_(
-			const char ch
-		) noexcept
+		constexpr explicit char_(const char ch) noexcept
 			: ch(ch)
 		{}
 
-		inline bool visit(
-			std::string_view::iterator& begin,
-			std::string_view::iterator end
-		) const& noexcept {
-			if (begin != end && *begin == ch) {
-				++begin;
+		constexpr inline bool visit(std::string_view& sv) const& noexcept {
+			if (!sv.empty() && sv.front() == ch) {
+				sv.remove_prefix(1);
 				return true;
 			}
 			return false;
 		}
 
-		char const ch;
+		char ch;
 	};
 
 	/// Supply a callback to determine if the character matches
-	/// alnum_, alpha_, space_, and punct_ are defined for you
 	struct char_if_ final : public impl::parser_base<char_if_> {
-		explicit char_if_(
-			bool(*cb)(char)
-		) noexcept
-			: cb(cb)
+		constexpr explicit char_if_(bool(*func)(char)) noexcept
+			: func(func)
 		{}
 
-		inline bool visit(
-			std::string_view::iterator& begin,
-			std::string_view::iterator end
-		) const& noexcept {
-			if (begin != end && cb(*begin)) {
-				++begin;
+		constexpr inline bool visit(std::string_view& sv) const& noexcept {
+			if (!sv.empty() && func(sv.front())) {
+				sv.remove_prefix(1);
 				return true;
 			}
 			return false;
 		}
 
-		bool(*cb)(char);
+		bool(*func)(char);
 	};
+
+#pragma push_macro("char_if_cctype")
+#define char_if_cctype(X) \
+	[[maybe_unused ]] constexpr static inline auto X##_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::is##X(ch); })
 	
-	[[maybe_unused ]] inline auto const alnum_ = char_if_([](char ch) -> bool {return std::isalnum(ch); });
-	[[maybe_unused ]] inline auto const alpha_ = char_if_([](char ch) -> bool {return std::isalpha(ch); });
-	[[maybe_unused ]] inline auto const space_ = char_if_([](char ch) -> bool {return std::isspace(ch); });
-	[[maybe_unused ]] inline auto const punct_ = char_if_([](char ch) -> bool {return std::ispunct(ch); });
+	char_if_cctype(alnum);
+	char_if_cctype(alpha);
+	char_if_cctype(lower);
+	char_if_cctype(upper);
+	char_if_cctype(digit);
+	char_if_cctype(xdigit);
+	char_if_cctype(cntrl);
+	char_if_cctype(graph);
+	char_if_cctype(space);
+	char_if_cctype(blank);
+	char_if_cctype(print);
+	char_if_cctype(punct);
+#undef char_if_cctype
+#pragma pop_macro("char_if_cctype")
 
 	/// Match a literal string
 	struct lit_ final : public impl::parser_base<lit_> {
-		explicit lit_(
-			char const* str
-		) noexcept
+		constexpr lit_(std::string_view str) noexcept
 			: str(str)
 		{}
 
-		bool visit(
-			std::string_view::iterator& begin,
-			std::string_view::iterator end
-		) const& noexcept {
-			// UGLY!
-			int i = 0;
-			for (; begin + i != end; ++i) {
-				if (!str[i]) {
-					begin += i;
-					return true;
-				}
-				if (str[i] != *(begin + i)) {
-					return false;
-				}
+		constexpr inline bool visit(std::string_view& sv) const& noexcept {
+			if (sv.substr(0, str.size()) == str) {
+				sv.remove_prefix(str.size());
+				return true;
 			}
-			return !str[i];
+			return false;
 		}
 
-		char const* str;
+		std::string_view str;
 	};
 
 	/// Call a function when parsing reaches this parser
-	/// The function will be called with an iterator to the current parser position
+	/// The function will be called with a view of the remaining string 
 	/// The function must return whether to continue parsing
-	template <typename Func>
-	struct action_ final : public impl::parser_base<action_<Func>> {
-		explicit action_(
-			Func func
-		) noexcept
+	struct action_ final : public impl::parser_base<action_> {
+		constexpr explicit action_(bool(*func)(std::string_view&)) noexcept
 			: func(func)
 		{}
 
-		inline bool visit(
-			std::string_view::iterator& begin,
-			std::string_view::iterator end
-		) const& noexcept {
-			return func(begin, end); // func returns false to fail the parse
+		constexpr inline bool visit(std::string_view& sv) const& noexcept {
+			return func(sv); // func returns false to fail the parse
 		}
 
-		Func func;
+		bool(*func)(std::string_view&);
 	};
 
 	namespace impl {
 		template <typename Left, typename Right>
 		struct seq_ final : public impl::parser_base<seq_<Left, Right>> {
-			explicit seq_(
-				Left&& left,
-				Right&& right
-			) noexcept
+			constexpr explicit seq_(Left&& left, Right&& right) noexcept
 				: left(std::forward<Left>(left))
 				, right(std::forward<Right>(right))
 			{}
 
-			inline bool visit(
-				std::string_view::iterator& begin,
-				std::string_view::iterator end
-			) const& noexcept {
-				return left.visit(begin, end) && right.visit(begin, end);
+			constexpr inline bool visit(std::string_view& sv) const& noexcept {
+				return left.visit(sv) && right.visit(sv);
 			}
 	
 			Left left;
@@ -141,19 +126,13 @@ namespace lm {
 
 		template <typename Left, typename Right>
 		struct alt_ final : public impl::parser_base<alt_<Left, Right>> {
-			explicit alt_(
-				Left&& left,
-				Right&& right
-			) noexcept
+			constexpr explicit alt_(Left&& left, Right&& right) noexcept
 				: left(std::forward<Left>(left))
 				, right(std::forward<Right>(right))
 			{}
 
-			inline bool visit(
-				std::string_view::iterator& begin,
-				std::string_view::iterator end
-			) const& noexcept {
-				return left.visit(begin, end) || right.visit(begin, end);
+			constexpr inline bool visit(std::string_view& sv) const& noexcept {
+				return left.visit(sv) || right.visit(sv);
 			}
 	
 			Left left;
@@ -162,15 +141,29 @@ namespace lm {
 
 		template <typename Base>
 		struct kleene_ final : public impl::parser_base<kleene_<Base>> {
-			explicit kleene_(Base base) noexcept
-				: base(base)
+			constexpr explicit kleene_(Base base) noexcept
+				: base(std::move(base))
 			{}
 
-			inline bool visit(
-				std::string_view::iterator& begin,
-				std::string_view::iterator end
-			) const& noexcept {
-				while (base.visit(begin, end));
+			constexpr inline bool visit(std::string_view& sv) const& noexcept {
+				while (base.visit(sv));
+				return true;
+			}
+
+			Base base;
+		};
+
+		template <typename Base>
+		struct plus_ final : public impl::parser_base<plus_<Base>> {
+			constexpr explicit plus_(Base base) noexcept
+				: base(std::move(base))
+			{}
+
+			constexpr inline bool visit(std::string_view& sv) const& noexcept {
+				if (!base.visit(sv)) {
+					return false;
+				}
+				while (base.visit(sv));
 				return true;
 			}
 
@@ -179,58 +172,46 @@ namespace lm {
 		
 		template <typename Base>
 		struct export_ final : public impl::parser_base<export_<Base>> {
-			explicit export_(
-				Base base,
-				std::string_view& sv
-			) noexcept
-				: base(base)
-				, sv(sv)
+			constexpr explicit export_(Base base, std::string_view& sv) noexcept
+				: base(std::move(base))
+				, out(sv)
 			{}
 
-			inline bool visit(
-				std::string_view::iterator& begin,
-				std::string_view::iterator end
-			) const& noexcept {
-				std::string_view::iterator matchBegin = begin;
-				if (base.visit(begin, end)) {
-					sv = std::string_view(matchBegin, begin - matchBegin);
+			constexpr inline bool visit(std::string_view& sv) const& noexcept {
+				std::string_view save = sv;
+				if (base.visit(sv)) {
+					out = save.substr(0, save.size() - sv.size());
 					return true;
 				}
 				return false;
 			}
 
 			Base base;
-			std::string_view& sv;
+			std::string_view& out;
 		};
 	
 		struct endtype_ final : public impl::parser_base<endtype_> {
-			inline bool visit(
-				std::string_view::iterator& begin,
-				std::string_view::iterator end
-			) const& noexcept {
-				return begin == end;
+			constexpr inline bool visit(std::string_view& sv) const& noexcept {
+				return sv.empty();
 			}
 		};
 	
 		struct emptytype_ final : public impl::parser_base<emptytype_> {
-			inline bool visit(
-				std::string_view::iterator& begin,
-				std::string_view::iterator end
-			) const& noexcept {
+			constexpr inline bool visit(std::string_view&) const& noexcept {
 				return true;
 			}
 		};
 	}
 
 	/// Match the end of the string
-	[[maybe_unused]] inline auto const end_ = impl::endtype_();
+	[[maybe_unused]] constexpr static inline auto end_ = impl::endtype_();
 
 	/// Match nothing
-	[[maybe_unused]] inline auto const empty_ = impl::emptytype_();
+	[[maybe_unused]] constexpr static inline auto empty_ = impl::emptytype_();
 
 	/// A >> B means match A and then match B
 	template <typename Left, typename Right>
-	inline auto operator>>(Left&& left, Right&& right) noexcept {
+	constexpr inline auto operator>>(Left&& left, Right&& right) noexcept {
 		return impl::seq_<Left, Right>(
 			std::forward<Left>(left),
 			std::forward<Right>(right)
@@ -239,7 +220,7 @@ namespace lm {
 
 	/// A | B means try to match A, and if that fails, try to match B
 	template <typename Left, typename Right>
-	inline auto operator|(Left&& left, Right&& right) noexcept {
+	constexpr inline auto operator|(Left&& left, Right&& right) noexcept {
 		return impl::alt_<Left, Right>(
 			std::forward<Left>(left),
 			std::forward<Right>(right)
@@ -248,26 +229,35 @@ namespace lm {
 
 	/// Match a parser as many times as possible (greedy Kleene star)
 	template <typename Base>
-	inline auto impl::parser_base<Base>::operator*() const noexcept {
-		return impl::kleene_<Base>(*reinterpret_cast<Base const*>(this));
+	constexpr inline auto impl::parser_base<Base>::operator*() const noexcept {
+		return impl::kleene_<Base>(*static_cast<Base const*>(this));
+	}
+
+	/// Match a parser one or more times
+	template <typename Base>
+	constexpr inline auto impl::parser_base<Base>::operator+() const noexcept {
+		return impl::plus_<Base>(*static_cast<Base const*>(this));
 	}
 	
 	/// Export a string view of the match
 	template <typename Base>
-	inline auto impl::parser_base<Base>::operator[](std::string_view& sv) const noexcept {
-		return impl::export_<Base>(*reinterpret_cast<Base const*>(this), sv);
-	}
-
-	/// Attempt to match [`begin`, `end`) with `parser`
-	template <typename Parser>
-	bool parseIterators(std::string_view::iterator& begin, std::string_view::iterator end, Parser const& parser) noexcept {
-		return parser.visit(begin, end);
+	constexpr inline auto impl::parser_base<Base>::operator[](std::string_view& sv) const noexcept {
+		return impl::export_<Base>(*static_cast<Base const*>(this), sv);
 	}
 
 	/// Attempt to match `sv` with `parser`
 	template <typename Parser>
-	bool parse(std::string_view const& sv, Parser const& parser) noexcept {
-		auto it = sv.begin();
-		return parser.visit(it, sv.end());
+	constexpr bool parse(std::string_view sv, Parser const& parser) noexcept {
+		return parser.visit(sv);
+	}
+
+	/// Attempt to match `sv` with `parser`
+	template <typename Parser>
+	constexpr bool parse_ref(std::string_view& sv, Parser const& parser) noexcept {
+		return parser.visit(sv);
 	}
 }
+
+#ifndef _MSC_VER
+#pragma GCC diagnostic pop
+#endif

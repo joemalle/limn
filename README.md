@@ -1,15 +1,36 @@
 # Limn
 
-Limn is a tiny parser designed to compile quickly.
-It was inspired by Boost Spirit.  It's pretty much the same
-except it's only for std::string_view and it compiles faster.
-On my laptop, the simple tests compile in 0.5s.
+Limn is a tiny parser library for C++17 and up.
+It is designed to be easy to use and to compile quickly.
+It was inspired by Boost Spirit.
+
+# Compilation time
+
+On my laptop, the Limn tests compile in about half a second.
+For reference, my laptop compiles the
+[Boost Spirit employee example](https://www.boost.org/doc/libs/1_68_0/libs/spirit/example/x3/employee.cpp)
+in about 10 seconds.
+
+# Compiler support
+
+I have tested this on:
+
+ - GCC 9.2
+ - Clang 9.0
+ - MSVC 19.22
+
+... using C++17 and C++2a.
+On MSVC I only tested compilation since I don't have a Windows computer.
 
 # Usage
 
-This is a single header library.  Simply `#include "limn.h"`.
+This is a single header library.
+Simply `#include "limn.h"`.
 
-# Example
+Then call `bool parse(std:string_view, Parser)`.
+Take a look at the example `Parser`s below.
+
+# Examples
 
     #include "limn.h"
     
@@ -17,7 +38,7 @@ This is a single header library.  Simply `#include "limn.h"`.
     
     // Check if a string matches
     bool isHelloWorld(std::string_view sv) {
-        return parse(sv, lit_("Hello") >> *space_ >> lit_("World"));
+        return parse(sv, lit_("Hello") >> *space_ >> lit_("World") >> end_);
     }
     
     // Return the match
@@ -26,13 +47,15 @@ This is a single header library.  Simply `#include "limn.h"`.
         parse(sv, (lit_("GET") | lit_("POST")) >> space_ >> (*alnum_)[out]);
         return out;
     }
+    
+    // Recursive example: match valid parentheses
+    bool validParentheses(std::string_view& sv) {
+        return parse_ref(
+            sv,
+            +(lit_("()") | (char_('(') >> action_(validParentheses) >> char_(')')))
+        );
+    }
 
+Look at `tests.cpp` for more.
 
-It is easy to create your own character types using `char_if_`.
-See tests.cpp for an example.
-
-There is also `action_` to run a user supplied callback when execution
-reaches that point.
-
-There are some documenting comments in the header.
 
