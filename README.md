@@ -4,7 +4,7 @@
 
 Limn is a tiny parser library for C++17 and up.
 It is designed to be easy to use and to compile quickly.
-It was inspired by Boost Spirit.
+It was inspired by the excellent [Boost Spirit](https://www.boost.org/doc/libs/develop/libs/spirit/doc/x3/html/index.html).
 
 # Compilation time
 
