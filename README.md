@@ -26,9 +26,13 @@ On MSVC I only tested compilation since I don't have a Windows computer.
 
 This is a single header library.
 Simply `#include "limn.h"`.
+There are no dependencies besides the STL's string_view and cctype.
 
 Then call `bool parse(std:string_view, Parser)`.
 Take a look at the example `Parser`s below.
+
+For reference style documentation, run `make docs`.
+To run the tests, run `make`.
 
 # Examples
 
@@ -58,4 +62,11 @@ Take a look at the example `Parser`s below.
 
 Look at `tests.cpp` for more.
 
+
+# Random
+
+I put `constexpr` everywhere.
+You would think that would slow down the compiler, but it has no noticeable effect.
+Perhaps on a larger project it would slow things down.
+On the other hand, it is very cool that you can run the parsers at compile time.
 
