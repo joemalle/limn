@@ -1,5 +1,7 @@
 # Limn
 
+[![Build Status](https://travis-ci.com/joemalle/limn.svg?branch=master)](https://travis-ci.com/joemalle/limn)
+
 Limn is a tiny parser library for C++17 and up.
 It is designed to be easy to use and to compile quickly.
 It was inspired by Boost Spirit.
