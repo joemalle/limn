@@ -1,0 +1,9 @@
+language: cpp
+sudo: false
+install: make
+compiler:
+  - clang
+  - gcc
+branches: master
+script:
+  - ./a.out
