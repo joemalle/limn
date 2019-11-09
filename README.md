@@ -53,7 +53,7 @@ To run the tests, run `make`.
     }
     
     // Recursive example: match valid parentheses
-    bool validParentheses(std::string_view& sv) {
+    constexpr bool validParentheses(std::string_view& sv) {
         return parse_ref(
             sv,
             +(lit_("()") | (char_('(') >> action_(validParentheses) >> char_(')')))
@@ -61,12 +61,4 @@ To run the tests, run `make`.
     }
 
 Look at `tests.cpp` for more.
-
-
-# Random
-
-I put `constexpr` everywhere.
-You would think that would slow down the compiler, but it has no noticeable effect.
-Perhaps on a larger project it would slow things down.
-On the other hand, it is very cool that you can run the parsers at compile time.
 
