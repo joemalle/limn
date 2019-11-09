@@ -1,5 +1,5 @@
 all:
-	g++ -std=c++2a -Wall tests.cpp
+	g++ -std=c++17 -Wall tests.cpp
 
 docs:
 	doxygen
