@@ -1,5 +1,6 @@
+dist: bionic
+sudo: require
 language: cpp
-sudo: false
 install: make
 compiler:
   - clang
