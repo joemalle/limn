@@ -84,57 +84,57 @@ namespace lm {
 	/// @var alpha_
 	/// @brief Single character parser based on std::isalpha
 	/// @details `lm::alpha_` parses letters.
-    [[maybe_unused ]] constexpr static inline auto alpha_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isalpha(ch); });
+	[[maybe_unused ]] constexpr static inline auto alpha_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isalpha(ch); });
 	
 	/// @var lower_
 	/// @brief Single character parser based on std::islower
 	/// @details `lm::lower_` parses lower case letters.
-    [[maybe_unused ]] constexpr static inline auto lower_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::islower(ch); });
+	[[maybe_unused ]] constexpr static inline auto lower_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::islower(ch); });
 	
 	/// @var upper_
 	/// @brief Single character parser based on std::isupper
 	/// @details `lm::upper_` parses upper case letters.
-    [[maybe_unused ]] constexpr static inline auto upper_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isupper(ch); });
+	[[maybe_unused ]] constexpr static inline auto upper_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isupper(ch); });
 	
 	/// @var digit_
 	/// @brief Single character parser based on std::isdigit
 	///
-    [[maybe_unused ]] constexpr static inline auto digit_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isdigit(ch); });
+	[[maybe_unused ]] constexpr static inline auto digit_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isdigit(ch); });
 	
 	/// @var xdigit_
 	/// @brief Single character parser based on std::xdigit
 	///
-    [[maybe_unused ]] constexpr static inline auto xdigit_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isxdigit(ch); });
+	[[maybe_unused ]] constexpr static inline auto xdigit_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isxdigit(ch); });
 	
 	/// @var cntrl_
 	/// @brief Single character parser based on std::cntrl
 	///
-    [[maybe_unused ]] constexpr static inline auto cntrl_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::iscntrl(ch); });
+	[[maybe_unused ]] constexpr static inline auto cntrl_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::iscntrl(ch); });
 	
 	/// @var graph_
 	/// @brief Single character parser based on std::graph
 	///
-    [[maybe_unused ]] constexpr static inline auto graph_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isgraph(ch); });
+	[[maybe_unused ]] constexpr static inline auto graph_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isgraph(ch); });
 	
 	/// @var space_
 	/// @brief Single character parser based on std::space
 	///
-    [[maybe_unused ]] constexpr static inline auto space_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isspace(ch); });
+	[[maybe_unused ]] constexpr static inline auto space_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isspace(ch); });
 	
 	/// @var blank_
 	/// @brief Single character parser based on std::blank
 	///
-    [[maybe_unused ]] constexpr static inline auto blank_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isblank(ch); });
+	[[maybe_unused ]] constexpr static inline auto blank_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isblank(ch); });
 	
 	/// @var print_
 	/// @brief Single character parser based on std::print
 	///
-    [[maybe_unused ]] constexpr static inline auto print_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isprint(ch); });
-	
+	[[maybe_unused ]] constexpr static inline auto print_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isprint(ch); });
+
 	/// @var punct_
 	/// @brief Single character parser based on std::punct
 	///
-    [[maybe_unused ]] constexpr static inline auto punct_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::ispunct(ch); });
+	[[maybe_unused ]] constexpr static inline auto punct_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::ispunct(ch); });
 
 	/// @class lit_
 	/// @brief String literal parser
