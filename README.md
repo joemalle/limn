@@ -16,14 +16,13 @@ in about 10 seconds.
 
 # Compiler support
 
-I have tested this on:
+Limn compiles on
 
- - GCC 9.2
- - Clang 9.0
- - MSVC 19.22
+ - GCC 9.2 with `-std=c++17`
+ - Clang 9.0 with `-std=c++17`
+ - MSVC 19.22 with `/std:c++17`
 
-... using C++17 and C++2a.
-On MSVC I only tested compilation since I don't have a Windows computer.
+N.B. On MSVC I only tested compilation since I don't have a Windows computer.
 
 # Usage
 
