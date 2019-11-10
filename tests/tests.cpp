@@ -39,7 +39,7 @@ constexpr std::string_view getMatch(std::string_view sv) noexcept {
 constexpr bool validParentheses(std::string_view& sv) {
     return parse_ref(
         sv,
-        +(lit_("()") | (char_('(') >> action_(validParentheses) >> char_(')')))
+        +(lit_("()") | (char_('(') >> action_(&validParentheses) >> char_(')')))
     );
 }
 
@@ -48,9 +48,17 @@ constexpr bool validParenthesesHelper(std::string_view sv) {
     return validParentheses(sv);
 }
 
+bool oneTwoThree(std::string_view sv) {
+	return parse(sv, lit_("one") >> (lit_("two") | empty_) >> lit_("three") >> end_);
+}
+
 int main () {
     assert(parse("a", char_('a')));
+    assert(parse("b", !char_('a')));
     assert(parse("ab", char_('a') | char_('b')));
+    assert(parse("ab", +charset_("ab")));
+    assert(parse("ab", +!charset_("cd")));
+    assert(!parse("ca", +charset_("ab")));
     assert(!parse("bb", char_('a') >> char_('b')));
     assert(!parse("aa", char_('a') >> char_('b')));
     assert(parse("aa", lit_("aa")));
@@ -77,4 +85,6 @@ int main () {
     assert(!validParenthesesHelper(")(())()"));
     assert(!validParenthesesHelper(""));
     assert(!validParenthesesHelper("((((("));
+	assert(oneTwoThree("onethree"));
+	assert(oneTwoThree("onetwothree"));
 }
