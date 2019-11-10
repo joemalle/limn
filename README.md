@@ -56,6 +56,7 @@ To run the tests, run `make`.
     }
     
     // Recursive example: match valid parentheses
+    // Can run at compile time
     constexpr bool validParentheses(std::string_view& sv) {
         return parse_ref(
             sv,
