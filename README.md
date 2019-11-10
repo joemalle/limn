@@ -29,13 +29,13 @@ On MSVC I only tested compilation since I don't have a Windows computer.
 
 This is a single header library.
 Simply `#include "limn.h"`.
-There are no dependencies besides the STL's string_view and cctype.
+There are no dependencies besides the STL's `string_view` and `cctype`.
 
 Then call `bool parse(std:string_view, Parser)`.
 Take a look at the example `Parser`s below.
 
-For reference style documentation, run `make docs`.
-To run the tests, run `make`.
+For reference style documentation, go to [codedocs](https://codedocs.xyz/joemalle/limn/namespacelm.html) or run `make docs`.
+To run the tests, run `make && ./a.out`.
 
 # Examples
 
@@ -64,5 +64,5 @@ To run the tests, run `make`.
         );
     }
 
-Look at `tests.cpp` for more.
+Look at [tests.cpp](tests/tests.cpp) and [http.cpp](tests/http.cpp) for more example code.
 
