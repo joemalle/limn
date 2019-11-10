@@ -42,7 +42,7 @@ namespace lm {
         ///     besides the one that the base accepts.  For example,
         ///     `! lm::char_('a')` accepts "b", "c", etc but does not
         ///     accept "a"
-		constexpr inline auto operator!() const& noexcept {
+        constexpr inline auto operator!() const& noexcept {
             struct not_ final : impl::parser_base<not_> {
                 constexpr explicit not_(const char ch) noexcept
                     : ch(ch)
@@ -94,7 +94,7 @@ namespace lm {
         ///     besides the ones that the base accepts.  For example,
         ///     `! lm::charset_("ab")` accepts "c", "d", etc but does not
         ///     accept "a" or "b"
-		constexpr inline auto operator!() const& noexcept {
+        constexpr inline auto operator!() const& noexcept {
             struct not_ final : impl::parser_base<not_> {
                 constexpr explicit not_(char const* set) noexcept
                     : set(set)
@@ -184,8 +184,8 @@ namespace lm {
 
         bool(*pred)(char);
     };
-	
-	// These are not constexpr because the underlying functions in cctype arent'
+    
+    // These are not constexpr because the underlying functions in cctype arent'
     
     /// @var alnum_
     /// @brief Single character parser based on std::isalnum
@@ -517,7 +517,7 @@ namespace lm {
     constexpr bool parse(std::string_view input, Parser const& parser) noexcept {
         return parser.visit(input);
     }
-	
+    
     /// @brief The parse function that takes \p input by reference
     /// @details This function is useful for recursive grammars. For
     ///     an example, see tests.cpp or README.md.

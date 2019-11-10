@@ -49,7 +49,7 @@ constexpr bool validParenthesesHelper(std::string_view sv) {
 }
 
 bool oneTwoThree(std::string_view sv) {
-	return parse(sv, lit_("one") >> (lit_("two") | empty_) >> lit_("three") >> end_);
+    return parse(sv, lit_("one") >> (lit_("two") | empty_) >> lit_("three") >> end_);
 }
 
 int main () {
@@ -85,6 +85,6 @@ int main () {
     assert(!validParenthesesHelper(")(())()"));
     assert(!validParenthesesHelper(""));
     assert(!validParenthesesHelper("((((("));
-	assert(oneTwoThree("onethree"));
-	assert(oneTwoThree("onetwothree"));
+    assert(oneTwoThree("onethree"));
+    assert(oneTwoThree("onetwothree"));
 }
