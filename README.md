@@ -1,6 +1,7 @@
 # Limn
 
 [![Build Status](https://travis-ci.com/joemalle/limn.svg?branch=master)](https://travis-ci.com/joemalle/limn)
+[![Documentation](https://codedocs.xyz/joemalle/limn.svg)](https://codedocs.xyz/joemalle/limn/)
 
 Limn is a tiny parser library for C++17 and up.
 It is designed to be easy to use and to compile quickly.
