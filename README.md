@@ -16,11 +16,11 @@ in about 10 seconds.
 
 # Compiler support
 
-Limn compiles on
+The earliest compiler versions that Limn supports are:
 
- - GCC 9.2 with `-std=c++17`
- - Clang 9.0 with `-std=c++17`
- - MSVC 19.22 with `/std:c++17`
+ - GCC 7.4 with `-std=c++17`
+ - Clang 7.0 with `-std=c++17`
+ - MSVC 19.14 with `/std:c++17`
 
 N.B. On MSVC I only tested compilation since I don't have a Windows computer.
 
