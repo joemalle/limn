@@ -13,7 +13,6 @@
 #pragma GCC diagnostic ignored "-Wshadow"
 #endif
 
-
 /// @namespace lm
 /// @brief The namesapce for all Limn types, functions, and variables
 namespace lm {
@@ -55,7 +54,8 @@ namespace lm {
                     }
                     return false;
                 }
-                
+        
+            private:
                 char ch;
             };
             
@@ -69,7 +69,8 @@ namespace lm {
             }
             return false;
         }
-
+        
+    private:
         char ch;
     };
     
@@ -112,7 +113,8 @@ namespace lm {
                     }
                     return false;
                 }
-                
+        
+            private:
                 char const* set;
             };
             
@@ -130,7 +132,8 @@ namespace lm {
             }
             return false;
         }
-
+        
+    private:
         char const* set;
     };
     
@@ -143,36 +146,11 @@ namespace lm {
     ///     characters with even ASCII values such as "B".
     struct char_if_ final : public impl::parser_base<char_if_> {
         /// @brief Construct a char_if_ parser
-        /// @param[in] pred The function that deterimines whether
+        /// @param[in] pred The function that determines whether
         ///     to parse a character.
         constexpr explicit char_if_(bool(*pred)(char)) noexcept
             : pred(pred)
         {}
-        
-        /// @brief Opposite parser
-        /// @details Construct a parser that accepts all characters
-        ///     besides the ones that the base accepts.  For example,
-        ///     `! lm::char_(isEven)` accepts "A", "C", etc but does not
-        ///     accept "B" because "B" is an even ASCII character.
-        constexpr inline auto operator!() const& noexcept {
-            struct not_ final : impl::parser_base<not_> {
-                constexpr explicit not_(bool(*pred)(char)) noexcept
-                    : pred(pred)
-                {}
-                    
-                constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                    if (!sv.empty() && !pred(sv.front())) {
-                        sv.remove_prefix(1);
-                        return true;
-                    }
-                    return false;
-                }
-                
-                bool(*pred)(char);
-            };
-            
-            return not_(pred);
-        }
 
         constexpr inline bool visit(std::string_view& sv) const& noexcept {
             if (!sv.empty() && pred(sv.front())) {
@@ -181,11 +159,12 @@ namespace lm {
             }
             return false;
         }
-
+        
+    private:
         bool(*pred)(char);
     };
     
-    // These are not constexpr because the underlying functions in cctype arent'
+    // These are not constexpr because the underlying functions in cctype aren't
     
     /// @var alnum_
     /// @brief Single character parser based on std::isalnum
@@ -254,7 +233,8 @@ namespace lm {
             }
             return false;
         }
-
+        
+    private:
         std::string_view str;
     };
     
@@ -294,7 +274,8 @@ namespace lm {
         constexpr inline bool visit(std::string_view& sv) const& noexcept {
             return func(sv); // func returns false to fail the parse
         }
-
+        
+    private:
         Func func;
     };
 
@@ -309,7 +290,8 @@ namespace lm {
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
                 return left.visit(sv) && right.visit(sv);
             }
-    
+        
+        private:
             Left left;
             Right right;
         };
@@ -324,7 +306,8 @@ namespace lm {
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
                 return left.visit(sv) || right.visit(sv);
             }
-    
+        
+        private:
             Left left;
             Right right;
         };
@@ -339,7 +322,8 @@ namespace lm {
                 while (base.visit(sv));
                 return true;
             }
-
+        
+        private:
             Base base;
         };
 
@@ -356,7 +340,8 @@ namespace lm {
                 while (base.visit(sv));
                 return true;
             }
-
+        
+        private:
             Base base;
         };
         
@@ -375,7 +360,8 @@ namespace lm {
                 }
                 return false;
             }
-
+        
+        private:
             Base base;
             std::string_view& out;
         };
@@ -457,12 +443,12 @@ namespace lm {
         );
     }
     
-    /// @brief The Kleen star or "any number of times" parser combinator
+    /// @brief The Kleene star or "any number of times" parser combinator
     /// @details This function returns a parser that matches its input
     ///     any number of times (including 0 times).  For example,
     ///     `* lm::char_('a')` matches "", "a", "aa", etc.  This is a greedy
     ///     match; `* lm::char_('a') >> lm::lit_("aa")` will NEVER parse an
-    ///     input string because the Kleen star will eat up all the 'a's.
+    ///     input string because the Kleene star will eat up all the 'a's.
     template <typename Base>
     constexpr inline auto impl::parser_base<Base>::operator*() const noexcept {
         return impl::kleene_<Base>(*static_cast<Base const*>(this));
@@ -481,7 +467,7 @@ namespace lm {
     
     /// @brief The match operator
     /// @details This side-effect-only function copies the matched part of
-    ///     input to its argument ouput.  If there is no match, then ouput
+    ///     input to its argument output.  If there is no match, then output
     ///     is unchanged.  For example, `(* lm::char_('a'))[output]` will match
     ///     any number of `a` characters in sequence, and it will copy that
     ///     sequence to the `std::string_view` `output`.
