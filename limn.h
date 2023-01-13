@@ -321,7 +321,7 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                while (base.visit(sv));
+                while (base.visit(sv) && !sv.empty());
                 return true;
             }
 
