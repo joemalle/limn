@@ -3,6 +3,8 @@
 #include <cassert>
 #include <string>
 
+#include <iostream> // std::cout
+
 // Match "Hello", as many spaces as necessary, and then "World"
 bool isHelloWorld(std::string_view sv) {
     return lm::parse(sv, lm::lit_("Hello") >> *lm::space_ >> lm::lit_("World") >> lm::end_);
@@ -52,6 +54,21 @@ bool oneTwoThree(std::string_view sv) {
     return parse(sv, lit_("one") >> (lit_("two") | empty_) >> lit_("three") >> end_);
 }
 
+// a function for print the matched string
+void testCallbackFunction(const std::string_view& output) {
+    std::cout << output << '\n';
+}
+
+// a functor which will be called when some item get metched
+std::function<void(const std::string_view&)> fn = testCallbackFunction;
+
+// a test function to run the parser and their callback
+std::string_view printMatchedItem(std::string_view sv) noexcept {
+    std::string_view out;
+    parse(sv, (*alnum_)[fn] >> *space_ >> (*alnum_)[fn]);
+    return out;
+}
+
 int main () {
     assert(parse("a", char_('a')));
     assert(parse("b", !char_('a')));
@@ -87,4 +104,6 @@ int main () {
     assert(!validParenthesesHelper("((((("));
     assert(oneTwoThree("onethree"));
     assert(oneTwoThree("onetwothree"));
+
+    printMatchedItem("xyz 567");
 }
