@@ -306,7 +306,8 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                return left.visit(sv) || right.visit(sv);
+                const std::string_view save = sv; // rewind the string_view if left failed, save should not be reference
+                return left.visit(sv) || right.visit(sv = save);  // reset the sv when calling the right parser
             }
 
         private:
