@@ -369,7 +369,7 @@ namespace lm {
         };
 
         template <typename Base>
-        struct match_call_ final : public impl::parser_base<match_<Base>> {
+        struct match_call_ final : public impl::parser_base<match_call_<Base>> {
             constexpr explicit match_call_(Base base, std::function<void(const std::string_view&)> callback) noexcept
                 : base(std::move(base))
                 , callback(std::move(callback))
