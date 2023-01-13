@@ -7,6 +7,7 @@
 
 #include <cctype>
 #include <string_view>
+#include <functional> // support match function call
 
 #ifndef _MSC_VER
 #pragma GCC diagnostic push
@@ -22,9 +23,10 @@ namespace lm {
             constexpr auto operator*() const noexcept;
             constexpr auto operator+() const noexcept;
             constexpr auto operator[](std::string_view& output) const noexcept;
+            constexpr auto operator[](std::function<void(const std::string_view&)> callback) const noexcept;
         };
     }
-    
+
     /// @class char_
     /// @brief Single character parser based on a char
     /// @details An object of this type parses a single character.
@@ -35,7 +37,7 @@ namespace lm {
         constexpr explicit char_(const char ch) noexcept
             : ch(ch)
         {}
-        
+
         /// @brief Opposite parser
         /// @details Construct a parser that accepts all characters
         ///     besides the one that the base accepts.  For example,
@@ -46,7 +48,7 @@ namespace lm {
                 constexpr explicit not_(const char ch) noexcept
                     : ch(ch)
                 {}
-                    
+
                 constexpr inline bool visit(std::string_view& sv) const& noexcept {
                     if (!sv.empty() && sv.front() != ch) {
                         sv.remove_prefix(1);
@@ -54,11 +56,11 @@ namespace lm {
                     }
                     return false;
                 }
-        
+
             private:
                 char ch;
             };
-            
+
             return not_(ch);
         }
 
@@ -69,15 +71,15 @@ namespace lm {
             }
             return false;
         }
-        
+
     private:
         char ch;
     };
-    
+
     /// @class charset_
     /// @brief Single character parser for any of several characters
     /// @details An object of this type parses several characters
-    ///     as specified in the argument.  For example, 
+    ///     as specified in the argument.  For example,
     ///     `lm::charset_("abc")` will parse "a", "b", or "c".
     ///     lm::charset_ is equivalent to lm::char_ | lm::char | ...
     ///     lm::charset_ is a slow parser at runtime. You may be
@@ -89,7 +91,7 @@ namespace lm {
         constexpr explicit charset_(char const* set) noexcept
             : set(set)
         {}
-        
+
         /// @brief Opposite parser
         /// @details Construct a parser that accepts all characters
         ///     besides the ones that the base accepts.  For example,
@@ -100,7 +102,7 @@ namespace lm {
                 constexpr explicit not_(char const* set) noexcept
                     : set(set)
                 {}
-                    
+
                 constexpr inline bool visit(std::string_view& sv) const& noexcept {
                     if (!sv.empty()) {
                         for (char const* s = set; *s; ++s) {
@@ -113,11 +115,11 @@ namespace lm {
                     }
                     return false;
                 }
-        
+
             private:
                 char const* set;
             };
-            
+
             return not_(set);
         }
 
@@ -132,11 +134,11 @@ namespace lm {
             }
             return false;
         }
-        
+
     private:
         char const* set;
     };
-    
+
     /// @class char_if_
     /// @brief Single character parser based on a function
     /// @details An object of this type uses a predicate to
@@ -159,53 +161,53 @@ namespace lm {
             }
             return false;
         }
-        
+
     private:
         bool(*pred)(char);
     };
-    
+
     // These are not constexpr because the underlying functions in cctype aren't
-    
+
     /// @var alnum_
     /// @brief Single character parser based on std::isalnum
     [[maybe_unused ]] static inline auto alnum_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isalnum(ch); });
-    
+
     /// @var alpha_
     /// @brief Single character parser based on std::isalpha
     [[maybe_unused ]] static inline auto alpha_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isalpha(ch); });
-    
+
     /// @var lower_
     /// @brief Single character parser based on std::islower
     [[maybe_unused ]] static inline auto lower_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::islower(ch); });
-    
+
     /// @var upper_
     /// @brief Single character parser based on std::isupper
     [[maybe_unused ]] static inline auto upper_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isupper(ch); });
-    
+
     /// @var digit_
     /// @brief Single character parser based on std::isdigit
     [[maybe_unused ]] static inline auto digit_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isdigit(ch); });
-    
+
     /// @var xdigit_
     /// @brief Single character parser based on std::xdigit
     [[maybe_unused ]] static inline auto xdigit_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isxdigit(ch); });
-    
+
     /// @var cntrl_
     /// @brief Single character parser based on std::cntrl
     [[maybe_unused ]] static inline auto cntrl_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::iscntrl(ch); });
-    
+
     /// @var graph_
     /// @brief Single character parser based on std::graph
     [[maybe_unused ]] static inline auto graph_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isgraph(ch); });
-    
+
     /// @var space_
     /// @brief Single character parser based on std::space
     [[maybe_unused ]] static inline auto space_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isspace(ch); });
-    
+
     /// @var blank_
     /// @brief Single character parser based on std::blank
     [[maybe_unused ]] static inline auto blank_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isblank(ch); });
-    
+
     /// @var print_
     /// @brief Single character parser based on std::print
     [[maybe_unused ]] static inline auto print_ = char_if_([](char const ch) noexcept -> bool { return 0 != std::isprint(ch); });
@@ -233,11 +235,11 @@ namespace lm {
             }
             return false;
         }
-        
+
     private:
         std::string_view str;
     };
-    
+
     /// @class action_
     /// @brief Customizable parser
     /// @details An object of this type uses a callback to
@@ -253,9 +255,9 @@ namespace lm {
         ///     argument starts at the current parse position and ends at the
         ///     end of the input string.  To indicate a match, return true
         ///     and adjust the string_view's start position to the end of the
-        ///     matched section.  If there is no match, the function must 
+        ///     matched section.  If there is no match, the function must
         ///     return false and not modify the input.
-        ///     
+        ///
         ///     For example, suppose you have a callback that parses "ABC".
         ///     You could have used `lm::lit_("ABC")`, but you like making things
         ///     complicated I guess.
@@ -274,7 +276,7 @@ namespace lm {
         constexpr inline bool visit(std::string_view& sv) const& noexcept {
             return func(sv); // func returns false to fail the parse
         }
-        
+
     private:
         Func func;
     };
@@ -290,7 +292,7 @@ namespace lm {
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
                 return left.visit(sv) && right.visit(sv);
             }
-        
+
         private:
             Left left;
             Right right;
@@ -306,7 +308,7 @@ namespace lm {
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
                 return left.visit(sv) || right.visit(sv);
             }
-        
+
         private:
             Left left;
             Right right;
@@ -322,7 +324,7 @@ namespace lm {
                 while (base.visit(sv));
                 return true;
             }
-        
+
         private:
             Base base;
         };
@@ -340,11 +342,11 @@ namespace lm {
                 while (base.visit(sv));
                 return true;
             }
-        
+
         private:
             Base base;
         };
-        
+
         template <typename Base>
         struct match_ final : public impl::parser_base<match_<Base>> {
             constexpr explicit match_(Base base, std::string_view& sv) noexcept
@@ -360,25 +362,46 @@ namespace lm {
                 }
                 return false;
             }
-        
+
         private:
             Base base;
             std::string_view& out;
         };
-    
+
+        template <typename Base>
+        struct match_call_ final : public impl::parser_base<match_<Base>> {
+            constexpr explicit match_call_(Base base, std::function<void(const std::string_view&)> callback) noexcept
+                : base(std::move(base))
+                , callback(std::move(callback))
+            {}
+
+            constexpr inline bool visit(std::string_view& sv) const& noexcept {
+                std::string_view save = sv;
+                if (base.visit(sv)) {
+                    callback(save.substr(0, save.size() - sv.size()));
+                    return true;
+                }
+                return false;
+            }
+
+        private:
+            Base base;
+            std::function<void(const std::string_view&)> callback;
+        };
+
         struct endtype_ final : public impl::parser_base<endtype_> {
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
                 return sv.empty();
             }
         };
-    
+
         struct emptytype_ final : public impl::parser_base<emptytype_> {
             constexpr inline bool visit(std::string_view&) const& noexcept {
                 return true;
             }
         };
     }
-    
+
     /// @var end_
     /// @brief End of input parser
     /// @details This object matches the end of the input.  For example,
@@ -388,7 +411,7 @@ namespace lm {
     ///     also matches "PrefixSuffix", "PrefixSuffixSuffix", etc.
     ///     `lm::lit("Prefix") >> lm::end_` will only match "Prefix".
     [[maybe_unused]] constexpr static inline auto end_ = impl::endtype_();
-    
+
     /// @var empty_
     /// @brief Empty parser
     /// @details This object matches anything.  It does not advance the parser's
@@ -398,7 +421,7 @@ namespace lm {
     ///     would match "Hello" and "HelloWorld".  The word "World" is optional
     ///     in this parser
     [[maybe_unused]] constexpr static inline auto empty_ = impl::emptytype_();
-    
+
     /// @brief The sequence parser combinator
     /// @details This function combines two parsers in sequence.  For example,
     ///     `lm::lit_("Hello") >> lm::lit_("World")` parses "HelloWorld" using
@@ -406,7 +429,7 @@ namespace lm {
     ///
     ///     If this first parser in a sequence fails, then the second parser
     ///     is never evaluated.
-    ///     
+    ///
     ///     This operator is found using ADL.
     ///
     /// @param[in] left The first parser to evaluate.
@@ -419,7 +442,7 @@ namespace lm {
             std::forward<Right>(right)
         );
     }
-    
+
     /// @brief The alternate parser combinator
     /// @details This function combines two parsers as alternatives.  For example,
     ///     `lm::lit_("Hello") | lm::lit_("World")` parses "Hello" or "World" using
@@ -428,7 +451,7 @@ namespace lm {
     ///     If this first parser in a sequence fails, then the second parser
     ///     is evaluated.  If the first parser succeeds, then the second parser
     ///     is never evaluated.  This is analogous to "short circuiting" of ||.
-    ///     
+    ///
     ///     This operator is found using ADL.
     ///
     /// @param[in] left The first parser to evaluate.  If true, then the combined
@@ -442,7 +465,7 @@ namespace lm {
             std::forward<Right>(right)
         );
     }
-    
+
     /// @brief The Kleene star or "any number of times" parser combinator
     /// @details This function returns a parser that matches its input
     ///     any number of times (including 0 times).  For example,
@@ -453,7 +476,7 @@ namespace lm {
     constexpr inline auto impl::parser_base<Base>::operator*() const noexcept {
         return impl::kleene_<Base>(*static_cast<Base const*>(this));
     }
-    
+
     /// @brief The plus parser or "one or more" parser combinator
     /// @details This function returns a parser that matches its input
     ///     one or more times (not including 0 times).  For example,
@@ -464,7 +487,7 @@ namespace lm {
     constexpr inline auto impl::parser_base<Base>::operator+() const noexcept {
         return impl::plus_<Base>(*static_cast<Base const*>(this));
     }
-    
+
     /// @brief The match operator
     /// @details This side-effect-only function copies the matched part of
     ///     input to its argument output.  If there is no match, then output
@@ -482,13 +505,34 @@ namespace lm {
     constexpr inline auto impl::parser_base<Base>::operator[](std::string_view& ouput) const noexcept {
         return impl::match_<Base>(*static_cast<Base const*>(this), ouput);
     }
-    
+
+    /// @brief The match callback operator
+    /// @details The std::function will be called when an item get matched.
+    ///     The std::function should have the protytype
+    ///     `std::function<void(const std::string_view&)>` where the argument
+    ///     is the matched string_view.
+    ///     If there is no match, then this function will not be called.
+    ///     For example, `(* lm::char_('a'))[functor]` will match
+    ///     any number of `a` characters in sequence, and it will call the functor.
+    ///
+    ///     This is useful for add the user defined action in this std::function
+    ///     For example, adding the AST of the matched item to the parsing tree
+    ///
+    ///     See tests.cpp or README.md for an example.
+    ///
+    /// @param[in] callback The std::function callback function which will be called when
+    ///     matched portion, the functor's parameter is the matched string_view.
+    template <typename Base>
+    constexpr inline auto impl::parser_base<Base>::operator[](std::function<void(const std::string_view&)> callback) const noexcept {
+        return impl:: match_call_<Base>(*static_cast<Base const*>(this), std::move(callback));
+    }
+
     /// @brief The parse function
     /// @details This is the top level function you should call to evaluate
     ///     a parser with an input.
     ///
     ///     For example:
-    ///         
+    ///
     ///         parse(
     ///             "Hello World",
     ///             lm::lit_(Hello) >> lm::space_ >> lm::lit_("World") >> lm::end_
@@ -503,7 +547,7 @@ namespace lm {
     constexpr bool parse(std::string_view input, Parser const& parser) noexcept {
         return parser.visit(input);
     }
-    
+
     /// @brief The parse function that takes \p input by reference
     /// @details This function is useful for recursive grammars. For
     ///     an example, see tests.cpp or README.md.
