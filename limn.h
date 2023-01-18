@@ -306,7 +306,8 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                return left.visit(sv) || right.visit(sv);
+                const std::string_view save = sv; // rewind the string_view if left failed, save should not be reference
+                return left.visit(sv) || right.visit(sv = save);  // reset the sv when calling the right parser
             }
 
         private:
@@ -321,7 +322,7 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                while (base.visit(sv));
+                while (base.visit(sv) && !sv.empty());
                 return true;
             }
 
@@ -369,7 +370,7 @@ namespace lm {
         };
 
         template <typename Base>
-        struct match_call_ final : public impl::parser_base<match_<Base>> {
+        struct match_call_ final : public impl::parser_base<match_call_<Base>> {
             constexpr explicit match_call_(Base base, std::function<void(const std::string_view&)> callback) noexcept
                 : base(std::move(base))
                 , callback(std::move(callback))
