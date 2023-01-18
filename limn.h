@@ -21,7 +21,9 @@ namespace lm {
 
         /// call the skip function when we run the visit()
         constexpr bool skip(std::string_view& sv) noexcept {
-            if (!sv.empty() && sv.front() == ' ') { // skip the whitespace
+            // whitespace could be: [ \t\r\n]+, see below
+            // https://en.cppreference.com/w/cpp/string/byte/isspace
+            if (!sv.empty() && 0 != std::isspace(sv.front())) { // skip the whitespace chars
                 sv.remove_prefix(1);
                 return true;
             }
