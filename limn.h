@@ -18,6 +18,16 @@
 /// @brief The namesapce for all Limn types, functions, and variables
 namespace lm {
     namespace impl {
+
+        /// call the skip function when we run the visit()
+        constexpr bool skip(std::string_view& sv) noexcept {
+            if (!sv.empty() && sv.front() == ' ') { // skip the whitespace
+                sv.remove_prefix(1);
+                return true;
+            }
+            return false;
+        };
+
         template <typename Base>
         struct parser_base {
             constexpr auto operator*() const noexcept;
@@ -290,7 +300,15 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                return left.visit(sv) && right.visit(sv);
+                impl::skip(sv);
+                bool left_result = left.visit(sv);
+                if (left_result)
+                {
+                    impl::skip(sv);
+                    return right.visit(sv);
+                }
+                else
+                    return false;
             }
 
         private:
@@ -306,6 +324,7 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
+                impl::skip(sv);
                 const std::string_view save = sv; // rewind the string_view if left failed, save should not be reference
                 return left.visit(sv) || right.visit(sv = save);  // reset the sv when calling the right parser
             }
@@ -322,7 +341,13 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                while (base.visit(sv) && !sv.empty());
+                impl::skip(sv);
+                std::string_view save = sv;
+                // save != sv means we does step forward (base.visit(sv) consume some chars)
+                // the asignment save = sv means the sv get updated, so try next loop
+                // to see it goes forward again
+                while (base.visit(sv) && !sv.empty() && save != sv)
+                    save = sv;
                 return true;
             }
 
@@ -337,10 +362,16 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
+                impl::skip(sv);
                 if (!base.visit(sv)) {
                     return false;
                 }
-                while (base.visit(sv));
+                std::string_view save = sv;
+                // save != sv means we does step forward (base.visit(sv) consume some chars)
+                // the asignment save = sv means the sv get updated, so try next loop
+                // to see it goes forward again
+                while (base.visit(sv) && !sv.empty() && save != sv)
+                    save = sv;
                 return true;
             }
 
@@ -356,6 +387,7 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
+                impl::skip(sv);
                 std::string_view save = sv;
                 if (base.visit(sv)) {
                     out = save.substr(0, save.size() - sv.size());
@@ -377,6 +409,7 @@ namespace lm {
             {}
 
             constexpr inline bool visit(std::string_view& sv) const& noexcept {
+                impl::skip(sv);
                 std::string_view save = sv;
                 if (base.visit(sv)) {
                     callback(save.substr(0, save.size() - sv.size()));
