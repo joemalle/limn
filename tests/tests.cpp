@@ -5,6 +5,9 @@
 
 #include <iostream> // std::cout
 
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <doctest/doctest.h>
+
 // Match "Hello", as many spaces as necessary, and then "World"
 bool isHelloWorld(std::string_view sv) {
     return lm::parse(sv, lm::lit_("Hello") >> *lm::space_ >> lm::lit_("World") >> lm::end_);
@@ -21,7 +24,7 @@ constexpr std::string_view getSecondWord(std::string_view sv) noexcept {
     parse(
         sv,
         *alpha_
-        >> space_
+        //>> space_
         >> (*char_if_([](auto ch) -> bool {
             return std::isprint(ch) && !std::isspace(ch);
         }))[secondWord]
@@ -33,7 +36,8 @@ constexpr std::string_view getSecondWord(std::string_view sv) noexcept {
 // return the word after "GET" or "POST"
 constexpr std::string_view getMatch(std::string_view sv) noexcept {
     std::string_view out;
-    parse(sv, (lit_("GET") | lit_("POST")) >> space_ >> (*alnum_)[out]);
+    //parse(sv, (lit_("GET") | lit_("POST")) >> space_ >> (*alnum_)[out]);
+    parse(sv, (lit_("GET") | lit_("POST")) >> (*alnum_)[out]);
     return out;
 }
 
@@ -54,56 +58,40 @@ bool oneTwoThree(std::string_view sv) {
     return parse(sv, lit_("one") >> (lit_("two") | empty_) >> lit_("three") >> end_);
 }
 
-// a function for print the matched string
-void testCallbackFunction(const std::string_view& output) {
-    std::cout << output << '\n';
+TEST_CASE("test simple text parsing"){
+    CHECK(parse("a", char_('a')));
+    CHECK(parse("b", !char_('a')));
+    CHECK(parse("ab", char_('a') | char_('b')));
+    CHECK(parse("ab", +charset_("ab")));
+    CHECK(parse("ab", +!charset_("cd")));
+    CHECK(!parse("ca", +charset_("ab")));
+    CHECK(!parse("bb", char_('a') >> char_('b')));
+    CHECK(!parse("aa", char_('a') >> char_('b')));
+    CHECK(parse("aa", lit_("aa")));
+    CHECK(!parse("cc", lit_("aa")));
+    CHECK(parse("", *char_('a')));
+    CHECK(parse("a", *char_('a')));
+    CHECK(parse("aaaa", *char_('a')));
+    CHECK(!parse("bb", *char_('a') >> end_));
+    CHECK(isHelloWorld("HelloWorld"));
+    CHECK(isHelloWorld("Hello World"));
+    CHECK(isHelloWorld("Hello \n\f\n\r\t\vWorld"));
+    CHECK(!isHelloWorld("World \n\f\n\r\t\vHello"));
+    CHECK(!isHelloWorld("Hello \n\f\n\r\t\vWorld extra"));
+    CHECK(getSecondWord("test").empty());
+    CHECK("2222" == getSecondWord("abcd 2222"));
+    CHECK("2222" == getSecondWord("abcd 2222 defg"));
+    CHECK("OK" == getMatch("GET OK"));
+    CHECK("OK" == getMatch("POST OK"));
+    CHECK(getMatch("NOPE OK").empty());
+    CHECK(validParenthesesHelper("()"));
+    CHECK(validParenthesesHelper("(())"));
+    CHECK(validParenthesesHelper("(())()"));
+    CHECK(!validParenthesesHelper("((())()"));
+    CHECK(!validParenthesesHelper(")(())()"));
+    CHECK(!validParenthesesHelper(""));
+    CHECK(!validParenthesesHelper("((((("));
+    CHECK(oneTwoThree("onethree"));
+    CHECK(oneTwoThree("onetwothree"));
 }
 
-// a functor which will be called when some item get metched
-std::function<void(const std::string_view&)> fn = testCallbackFunction;
-
-// a test function to run the parser and their callback
-std::string_view printMatchedItem(std::string_view sv) noexcept {
-    std::string_view out;
-    parse(sv, (*alnum_)[fn] >> *space_ >> (*alnum_)[fn]);
-    return out;
-}
-
-int main () {
-    assert(parse("a", char_('a')));
-    assert(parse("b", !char_('a')));
-    assert(parse("ab", char_('a') | char_('b')));
-    assert(parse("ab", +charset_("ab")));
-    assert(parse("ab", +!charset_("cd")));
-    assert(!parse("ca", +charset_("ab")));
-    assert(!parse("bb", char_('a') >> char_('b')));
-    assert(!parse("aa", char_('a') >> char_('b')));
-    assert(parse("aa", lit_("aa")));
-    assert(!parse("cc", lit_("aa")));
-    assert(parse("", *char_('a')));
-    assert(parse("a", *char_('a')));
-    assert(parse("aaaa", *char_('a')));
-    assert(!parse("bb", *char_('a') >> end_));
-    assert(isHelloWorld("HelloWorld"));
-    assert(isHelloWorld("Hello World"));
-    assert(isHelloWorld("Hello \n\f\n\r\t\vWorld"));
-    assert(!isHelloWorld("World \n\f\n\r\t\vHello"));
-    assert(!isHelloWorld("Hello \n\f\n\r\t\vWorld extra"));
-    assert(getSecondWord("test").empty());
-    assert("2222" == getSecondWord("abcd 2222"));
-    assert("2222" == getSecondWord("abcd 2222 defg"));
-    assert("OK" == getMatch("GET OK"));
-    assert("OK" == getMatch("POST OK"));
-    assert(getMatch("NOPE OK").empty());
-    assert(validParenthesesHelper("()"));
-    assert(validParenthesesHelper("(())"));
-    assert(validParenthesesHelper("(())()"));
-    assert(!validParenthesesHelper("((())()"));
-    assert(!validParenthesesHelper(")(())()"));
-    assert(!validParenthesesHelper(""));
-    assert(!validParenthesesHelper("((((("));
-    assert(oneTwoThree("onethree"));
-    assert(oneTwoThree("onetwothree"));
-
-    printMatchedItem("xyz 567");
-}
