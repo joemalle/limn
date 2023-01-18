@@ -21,6 +21,12 @@ constexpr bool ReadTemplateSpecializationParameters(std::string_view& sv) {
     return parse_ref(sv, *(!char_('>')));
 }
 
+// todo, should consider/skip inner {} inside a toplevel {}
+// so the whole function body is read
+constexpr bool ReadFunctionBody(std::string_view& sv) {
+    return parse_ref(sv, *(!char_('}')));
+}
+
 auto p = [](const std::string_view& output){
     if (output.empty())
         std::cout << "Empty Input Matches!!!" << std::endl;
@@ -40,7 +46,7 @@ auto qualified_name = (lit_("::") | empty_) >> scope_name >> *( lit_("::") >> sc
 auto template_single_arg = (lit_("class") | lit_("typename")) >> id >> ((char_('=') >> id) | empty_);
 auto template_arg_list = template_single_arg[p] >> *(char_(',') >> template_single_arg);
 
-auto pointer_reference_const_qualifier = (lit_("const") | *lit_("*") | *lit_("&"));
+auto pointer_reference_const_qualifier = *(lit_("const") | lit_("*") | lit_("&"));
 
 // unsigned int a
 // A::B::C a
@@ -50,7 +56,8 @@ auto pointer_reference_const_qualifier = (lit_("const") | *lit_("*") | *lit_("&"
 // float && a
 // const int a
 // const int * a
-auto function_single_arg = +( qualified_name | pointer_reference_const_qualifier | empty_) >> ((char_('=') >> action_(&ReadFunctionSingleParameter)) | empty_);
+auto function_arg_default_value = (char_('=') >> action_(&ReadFunctionSingleParameter)) | empty_;
+auto function_single_arg = +( qualified_name | pointer_reference_const_qualifier | empty_) >> function_arg_default_value;
 
 // comma seperated function argument
 // int a, float b = 6, double c = f(), char d
@@ -58,6 +65,24 @@ auto function_arg_list =  *function_single_arg >> *(char_(',') >> function_singl
 
 auto template_function_declaration_grammar = lit_("template") >> char_('<') >> template_arg_list[p] >> char_('>')
     >> +qualified_name[p] >> char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> char_(';');
+
+
+// a lambda function looks like below:
+// [ capture clause ] (parameters) -> return-type
+// {
+//    definition of method
+// }
+// [ captures ] ( params ) specs requires(optional) { body }
+
+// specs consists of specifiers, exception, attr and trailing-return-type in that order;
+// each of these components is optional
+
+auto lambda_return_type =  ( lit_("->") >> qualified_name ) | empty_; //optional
+auto lambda_noexcept_specifier = ( lit_("[[") >> id >> lit_("]]") ) | empty_; //optional
+auto lambda_parameters = ( char_('(') >> function_arg_list >> char_(')') ) | empty_; //optional
+auto lambda_function_definition = char_('[') >> function_arg_list >> char_(']') >> lambda_parameters
+    >> lambda_noexcept_specifier >> lambda_return_type >> char_('{') >> action_(&ReadFunctionBody) >> char_('}');
+
 
 TEST_CASE("testing of parrsing the C++ code") {
 
@@ -81,6 +106,13 @@ TEST_CASE("testing of parrsing the C++ code") {
     CHECK(parse("::A::B::C", qualified_name >> end_));
 
     CHECK(parse("()", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
+    CHECK(parse("(int a)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
+    CHECK(parse("(auto a)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
+    CHECK(parse("(int* a)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
+    CHECK(parse("(int& a)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
+    CHECK(parse("(int** a)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
+    CHECK(parse("(int&& a)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
+
     CHECK(parse("(A::B::C a)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
     CHECK(parse("(A::B::C a, A::B::C b, A::B::C c)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
     CHECK(parse("(T x = C)", char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> end_));
@@ -92,4 +124,17 @@ TEST_CASE("testing of parrsing the C++ code") {
     CHECK(parse("template <typename T> T U X A::B::C();", template_function_declaration_grammar >> end_));
     CHECK(parse("template <typename T> T U X A::B::C(T x = C, T y, D* u);", template_function_declaration_grammar >> end_));
     CHECK(parse("template <typename T> T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", template_function_declaration_grammar >> end_));
+
+
+    SUBCASE("lambda"){
+        CHECK(parse("[]", char_('[') >> function_arg_list >> char_(']') >> end_));
+        CHECK(parse("(auto a, auto&& b)",  char_('(') >> function_arg_list >> char_(')')  >> end_));
+
+        CHECK(parse("{ return a < b; }",  char_('{') >> action_(&ReadFunctionBody) >> char_('}') >> end_));
+        CHECK(parse("-> int",  lambda_return_type >> end_));
+        CHECK(parse("[](auto a, auto&& b) { return a < b; }",  lambda_function_definition >> end_));
+        CHECK(parse("[](auto a, auto&& b) -> int { return a < b; }", lambda_function_definition >> end_));
+
+    }
+
 }
