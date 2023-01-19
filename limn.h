@@ -298,10 +298,10 @@ namespace lm {
     /// @details An object of this type happens for one match of the item or empty
     /// For example, `optional_( lm::lit_("hello") )` can parse the string "hello" or the empty
     /// string, so it is a simplied form of `lm::lit_("hello") | empty_`.
-    template <typename T>
-    struct optional_ final : public impl::parser_base<optional_<T>> {
-        constexpr explicit optional_(T&& p) noexcept
-            : base(std::forward<T>(p))
+    template <typename Base>
+    struct optional_ final : public impl::parser_base<optional_<Base>> {
+        constexpr explicit optional_(Base base) noexcept
+            : base(std::forward<Base>(base))
         {}
 
         constexpr inline bool visit(std::string_view& sv) const& noexcept {
@@ -310,7 +310,7 @@ namespace lm {
         }
 
     private:
-        T base;
+        Base base;
     };
 
     namespace impl {
