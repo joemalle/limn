@@ -94,10 +94,10 @@ TEST_CASE("test simple text parsing"){
     CHECK(oneTwoThree("onethree"));
     CHECK(oneTwoThree("onetwothree"));
 
-    // test the optional_
-    CHECK(parse("ab@", *alnum_ >> optional_(char_('@')) >> end_));
-    CHECK(parse("ab", *alnum_ >> optional_(char_('@')) >> end_));
-    CHECK(parse("hello world", lit_("hello") >> optional_(lit_("world")) >> end_));
-    CHECK(parse("hello", lit_("hello") >> optional_(lit_("world")) >> end_));
+    // test the opt_
+    CHECK(parse("ab@", *alnum_ >> opt_(char_('@')) >> end_));
+    CHECK(parse("ab", *alnum_ >> opt_(char_('@')) >> end_));
+    CHECK(parse("hello world", lit_("hello") >> opt_(lit_("world")) >> end_));
+    CHECK(parse("hello", lit_("hello") >> opt_(lit_("world")) >> end_));
 }
 

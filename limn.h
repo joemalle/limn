@@ -293,14 +293,14 @@ namespace lm {
         Func func;
     };
 
-    /// @class optional_
+    /// @class opt_
     /// @brief Zero or one of the match parser
     /// @details An object of this type happens for one match of the item or empty
-    /// For example, `optional_( lm::lit_("hello") )` can parse the string "hello" or the empty
+    /// For example, `opt_( lm::lit_("hello") )` can parse the string "hello" or the empty
     /// string, so it is a simplied form of `lm::lit_("hello") | empty_`.
     template <typename Base>
-    struct optional_ final : public impl::parser_base<optional_<Base>> {
-        constexpr explicit optional_(Base base) noexcept
+    struct opt_ final : public impl::parser_base<opt_<Base>> {
+        constexpr explicit opt_(Base base) noexcept
             : base(std::forward<Base>(base))
         {}
 

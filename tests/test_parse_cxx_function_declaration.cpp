@@ -48,13 +48,13 @@ auto p = [](const std::string_view& output){
 auto id = (+alnum_);
 
 // B<x = 5, y = int>
-auto scope_name = id >> optional_(char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>'));
+auto scope_name = id >> opt_(char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>'));
 
 // A::B<x = 5, y = int>::C
-auto qualified_name = optional_(lit_("::")) >> scope_name >> *( lit_("::") >> scope_name);
+auto qualified_name = opt_(lit_("::")) >> scope_name >> *( lit_("::") >> scope_name);
 
 
-auto template_single_arg = (lit_("class") | lit_("typename")) >> id >> optional_(char_('=') >> id);
+auto template_single_arg = (lit_("class") | lit_("typename")) >> id >> opt_(char_('=') >> id);
 auto template_arg_list = template_single_arg[p] >> *(char_(',') >> template_single_arg);
 
 constexpr
@@ -111,8 +111,8 @@ auto template_function_declaration_grammar = lit_("template") >> char_('<') >> t
 //};
 
 
-auto function_declaration = optional_(lit_("const"))
-    >> +((qualified_name)[PushQualifiedName] >> optional_(pointer_reference_const_qualifier))
+auto function_declaration = opt_(lit_("const"))
+    >> +((qualified_name)[PushQualifiedName] >> opt_(pointer_reference_const_qualifier))
     >> char_('(') >> function_arg_list[SetArgs] >> char_(')')>> char_(';');
 
 
