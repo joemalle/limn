@@ -40,10 +40,10 @@ auto id = (+alnum_);
 auto scope_name = id >> (char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>')  | empty_);
 
 // A::B<x = 5, y = int>::C
-auto qualified_name = (lit_("::") | empty_) >> scope_name >> *( lit_("::") >> scope_name);
+auto qualified_name = opt_(lit_("::")) >> scope_name >> *( lit_("::") >> scope_name);
 
 
-auto template_single_arg = (lit_("class") | lit_("typename")) >> id >> ((char_('=') >> id) | empty_);
+auto template_single_arg = (lit_("class") | lit_("typename")) >> id >> opt_((char_('=') >> id));
 auto template_arg_list = template_single_arg[p] >> *(char_(',') >> template_single_arg);
 
 auto pointer_reference_const_qualifier = *(lit_("const") | lit_("*") | lit_("&"));
@@ -56,7 +56,7 @@ auto pointer_reference_const_qualifier = *(lit_("const") | lit_("*") | lit_("&")
 // float && a
 // const int a
 // const int * a
-auto function_arg_default_value = (char_('=') >> action_(&ReadFunctionSingleParameter)) | empty_;
+auto function_arg_default_value = opt_(char_('=') >> action_(&ReadFunctionSingleParameter));
 auto function_single_arg = +( qualified_name | pointer_reference_const_qualifier | empty_) >> function_arg_default_value;
 
 // comma seperated function argument
@@ -77,9 +77,9 @@ auto template_function_declaration_grammar = lit_("template") >> char_('<') >> t
 // specs consists of specifiers, exception, attr and trailing-return-type in that order;
 // each of these components is optional
 
-auto lambda_return_type =  ( lit_("->") >> qualified_name ) | empty_; //optional
-auto lambda_noexcept_specifier = ( lit_("[[") >> id >> lit_("]]") ) | empty_; //optional
-auto lambda_parameters = ( char_('(') >> function_arg_list >> char_(')') ) | empty_; //optional
+auto lambda_return_type =  opt_( lit_("->") >> qualified_name ); //optional
+auto lambda_noexcept_specifier = opt_( lit_("[[") >> id >> lit_("]]") ); //optional
+auto lambda_parameters = opt_( char_('(') >> function_arg_list >> char_(')') ); //optional
 auto lambda_function_definition = char_('[') >> function_arg_list >> char_(']') >> lambda_parameters
     >> lambda_noexcept_specifier >> lambda_return_type >> char_('{') >> action_(&ReadFunctionBody) >> char_('}');
 

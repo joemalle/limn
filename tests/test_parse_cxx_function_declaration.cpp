@@ -68,7 +68,7 @@ auto pointer_reference_const_qualifier = *(lit_("const") | lit_("*") | lit_("&")
 // float && a
 // const int a
 // const int * a
-auto function_arg_default_value = (char_('=') >> action_(&ReadFunctionSingleParameter)) | empty_;
+auto function_arg_default_value = opt_(char_('=') >> action_(&ReadFunctionSingleParameter));
 auto function_single_arg = +( qualified_name | pointer_reference_const_qualifier | empty_) >> function_arg_default_value;
 
 // comma seperated function argument
