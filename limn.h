@@ -294,7 +294,7 @@ namespace lm {
     };
 
     /// @class opt_
-    /// @brief Zero or one of the match parser
+    /// @brief Zero or one of the match parser, in another word it is an optional item
     /// @details An object of this type happens for one match of the item or empty
     /// For example, `opt_( lm::lit_("hello") )` can parse the string "hello" or the empty
     /// string, so it is a simplied form of `lm::lit_("hello") | empty_`.
