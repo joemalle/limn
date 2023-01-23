@@ -112,7 +112,7 @@ auto template_function_declaration_grammar = lit_("template") >> char_('<') >> t
 
 
 auto function_declaration = opt_(lit_("const"))
-    >> +((qualified_name)[PushQualifiedName] >> opt_(pointer_reference_const_qualifier))
+    >> +(qualified_name[PushQualifiedName] >> opt_(pointer_reference_const_qualifier))
     >> char_('(') >> function_arg_list[SetArgs] >> char_(')')>> char_(';');
 
 
