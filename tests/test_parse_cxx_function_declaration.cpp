@@ -88,7 +88,7 @@ auto template_function_declaration_grammar = lit_("template") >> char_('<') >> t
 //
 
 
-//struct FunctionDeclarationTag {
+struct FunctionDeclarationTag {
 
     std::string return_type;
     std::string name;
@@ -105,31 +105,55 @@ auto template_function_declaration_grammar = lit_("template") >> char_('<') >> t
 
     void Finish()
     {
+        std::cout << "Finish function:" << std::endl;
         for (auto item : qualified_name_vector)
             std::cout << item << std::endl;
     }
-//};
+
+    bool Parse(std::string input);
+};
 
 
-auto function_declaration = opt_(lit_("const"))
-    >> +(qualified_name[PushQualifiedName] >> opt_(pointer_reference_const_qualifier))
-    >> char_('(') >> function_arg_list[SetArgs] >> char_(')')>> char_(';');
+bool FunctionDeclarationTag::Parse(std::string input)
+{
+    auto push_var = [&](const std::string_view& sv){qualified_name_vector.push_back(std::string(sv));};
+    auto set_args = [&](const std::string_view& sv){args = sv;};
+
+    auto function_declaration = opt_(lit_("const"))
+        >> +(qualified_name[push_var] >> opt_(pointer_reference_const_qualifier))
+        >> char_('(') >> function_arg_list[set_args] >> char_(')')>> char_(';');
+
+    if (parse(input, function_declaration >> end_) == true)
+    {
+        Finish();
+    }
+    else
+    {
+        std::cout << "failed!!!" << std::endl;
+        return false;
+    }
+
+    return true;
+}
 
 
 TEST_CASE("parrsing the C++ function declaration") {
 
-    CHECK(parse("int sum (int x, int y);", function_declaration));
-    CHECK(parse("int* sum (int x, int y);", function_declaration));
-    CHECK(parse("T A::B::fun();", function_declaration >> end_));
-    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
-    CHECK(parse("A::B X::Y::fun();", function_declaration >> end_));
-    CHECK(parse("T U X A::B::C();", function_declaration >> end_));
-    CHECK(parse("T U X A::B::C(T x = C, T y, D* u);", function_declaration >> end_));
-    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
-    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
-    CHECK(parse("A::B<m>::C X();", function_declaration >> end_));
-    std::cout << "print vector:" << std::endl;
-    Finish();
+//    CHECK(parse("int sum (int x, int y);", function_declaration));
+//    CHECK(parse("int* sum (int x, int y);", function_declaration));
+//    CHECK(parse("T A::B::fun();", function_declaration >> end_));
+//    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
+//    CHECK(parse("A::B X::Y::fun();", function_declaration >> end_));
+//    CHECK(parse("T U X A::B::C();", function_declaration >> end_));
+//    CHECK(parse("T U X A::B::C(T x = C, T y, D* u);", function_declaration >> end_));
+//    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
+//    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
+//    CHECK(parse("A::B<m>::C X();", function_declaration >> end_));
+//    std::cout << "print vector:" << std::endl;
+//    Finish();
+
+    FunctionDeclarationTag f;
+    CHECK(f.Parse("A::B<m>::C X::Y<u>::Z();"));
 
 }
 

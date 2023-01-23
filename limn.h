@@ -366,7 +366,7 @@ namespace lm {
                 impl::skip(sv);
                 std::string_view save = sv;
                 // save != sv means we does step forward (base.visit(sv) consume some chars)
-                // the asignment save = sv means the sv get updated, so try next loop
+                // the assignment save = sv means the sv get updated, so try next loop
                 // to see it goes forward again
                 while (base.visit(sv) && !sv.empty() && save != sv)
                     save = sv;
@@ -390,7 +390,7 @@ namespace lm {
                 }
                 std::string_view save = sv;
                 // save != sv means we does step forward (base.visit(sv) consume some chars)
-                // the asignment save = sv means the sv get updated, so try next loop
+                // the assignment save = sv means the sv get updated, so try next loop
                 // to see it goes forward again
                 while (base.visit(sv) && !sv.empty() && save != sv)
                     save = sv;
