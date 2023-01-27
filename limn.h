@@ -17,18 +17,45 @@
 /// @namespace lm
 /// @brief The namesapce for all Limn types, functions, and variables
 namespace lm {
-    namespace impl {
 
+    class Skipper
+    {
+    public:
         /// call the skip function when we run the visit()
-        constexpr bool skip(std::string_view& sv) noexcept {
+        virtual bool skip(std::string_view& sv) noexcept  = 0;
+    };
+
+    class SkipWhitespace : public Skipper
+    {
+    public:
+        /// call the skip function when we run the visit()
+        bool skip(std::string_view& sv) noexcept {
             // whitespace could be: [ \t\r\n]+, see below
             // https://en.cppreference.com/w/cpp/string/byte/isspace
-            if (!sv.empty() && 0 != std::isspace(sv.front())) { // skip the whitespace chars
+            bool remove_char = false;
+            while (!sv.empty() && 0 != std::isspace(sv.front())) { // skip the whitespace chars
                 sv.remove_prefix(1);
-                return true;
+                remove_char = true;
             }
-            return false;
+            return remove_char;
         };
+    };
+
+    class NoSkip : public Skipper
+    {
+    public:
+
+        /// skip nothing
+        bool skip(std::string_view& sv) noexcept {
+            return true;
+        };
+    };
+
+    static SkipWhitespace skws;
+    static NoSkip nosk;
+
+
+    namespace impl {
 
         template <typename Base>
         struct parser_base {
@@ -61,7 +88,7 @@ namespace lm {
                     : ch(ch)
                 {}
 
-                constexpr inline bool visit(std::string_view& sv) const& noexcept {
+                constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
                     if (!sv.empty() && sv.front() != ch) {
                         sv.remove_prefix(1);
                         return true;
@@ -76,7 +103,7 @@ namespace lm {
             return not_(ch);
         }
 
-        constexpr inline bool visit(std::string_view& sv) const& noexcept {
+        constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
             if (!sv.empty() && sv.front() == ch) {
                 sv.remove_prefix(1);
                 return true;
@@ -115,7 +142,7 @@ namespace lm {
                     : set(set)
                 {}
 
-                constexpr inline bool visit(std::string_view& sv) const& noexcept {
+                constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
                     if (!sv.empty()) {
                         for (char const* s = set; *s; ++s) {
                             if (*s == sv.front()) {
@@ -135,7 +162,7 @@ namespace lm {
             return not_(set);
         }
 
-        constexpr inline bool visit(std::string_view& sv) const& noexcept {
+        constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
             if (!sv.empty()) {
                 for (char const* s = set; *s; ++s) {
                     if (*s == sv.front()) {
@@ -166,7 +193,7 @@ namespace lm {
             : pred(pred)
         {}
 
-        constexpr inline bool visit(std::string_view& sv) const& noexcept {
+        constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
             if (!sv.empty() && pred(sv.front())) {
                 sv.remove_prefix(1);
                 return true;
@@ -240,7 +267,7 @@ namespace lm {
             : str(str)
         {}
 
-        constexpr inline bool visit(std::string_view& sv) const& noexcept {
+        constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
             if (sv.substr(0, str.size()) == str) {
                 sv.remove_prefix(str.size());
                 return true;
@@ -285,7 +312,7 @@ namespace lm {
             : func(std::forward<Func>(func))
         {}
 
-        constexpr inline bool visit(std::string_view& sv) const& noexcept {
+        constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
             return func(sv); // func returns false to fail the parse
         }
 
@@ -304,9 +331,29 @@ namespace lm {
             : base(std::forward<Base>(base))
         {}
 
-        constexpr inline bool visit(std::string_view& sv) const& noexcept {
-            base.visit(sv);
+        constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+            skipper.skip(sv);
+            base.visit(sv, skipper);
             return true;
+        }
+
+    private:
+        Base base;
+    };
+
+    /// @class lexeme_
+    /// @brief
+    /// @details
+    template <typename Base>
+    struct lexeme_ final : public impl::parser_base<lexeme_<Base>> {
+        constexpr explicit lexeme_(Base base) noexcept
+            : base(std::forward<Base>(base))
+        {}
+
+        constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+            // skipper.skip(sv);
+            // nosk.skip(sv);
+            return base.visit(sv, nosk); // lexeme is atomic, so don't use passed skipper, use nosk instead;
         }
 
     private:
@@ -321,13 +368,13 @@ namespace lm {
                 , right(std::forward<Right>(right))
             {}
 
-            constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                impl::skip(sv);
-                bool left_result = left.visit(sv);
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+                skipper.skip(sv);
+                bool left_result = left.visit(sv, skipper);
                 if (left_result)
                 {
-                    impl::skip(sv);
-                    return right.visit(sv);
+                    skipper.skip(sv);
+                    return right.visit(sv, skipper);
                 }
                 else
                     return false;
@@ -345,10 +392,10 @@ namespace lm {
                 , right(std::forward<Right>(right))
             {}
 
-            constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                impl::skip(sv);
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+                skipper.skip(sv);
                 const std::string_view save = sv; // rewind the string_view if left failed, save should not be reference
-                return left.visit(sv) || right.visit(sv = save);  // reset the sv when calling the right parser
+                return left.visit(sv, skipper) || right.visit(sv = save, skipper);  // reset the sv when calling the right parser
             }
 
         private:
@@ -362,13 +409,13 @@ namespace lm {
                 : base(std::move(base))
             {}
 
-            constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                impl::skip(sv);
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+                skipper.skip(sv);
                 std::string_view save = sv;
                 // save != sv means we does step forward (base.visit(sv) consume some chars)
                 // the assignment save = sv means the sv get updated, so try next loop
                 // to see it goes forward again
-                while (base.visit(sv) && !sv.empty() && save != sv)
+                while (base.visit(sv, skipper) && !sv.empty() && save != sv)
                     save = sv;
                 return true;
             }
@@ -383,16 +430,16 @@ namespace lm {
                 : base(std::move(base))
             {}
 
-            constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                impl::skip(sv);
-                if (!base.visit(sv)) {
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+                skipper.skip(sv);
+                if (!base.visit(sv, skipper)) {
                     return false;
                 }
                 std::string_view save = sv;
                 // save != sv means we does step forward (base.visit(sv) consume some chars)
                 // the assignment save = sv means the sv get updated, so try next loop
                 // to see it goes forward again
-                while (base.visit(sv) && !sv.empty() && save != sv)
+                while (base.visit(sv, skipper) && !sv.empty() && save != sv)
                     save = sv;
                 return true;
             }
@@ -408,10 +455,10 @@ namespace lm {
                 , out(sv)
             {}
 
-            constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                impl::skip(sv);
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+                skipper.skip(sv);
                 std::string_view save = sv;
-                if (base.visit(sv)) {
+                if (base.visit(sv, skipper)) {
                     out = save.substr(0, save.size() - sv.size());
                     return true;
                 }
@@ -430,10 +477,10 @@ namespace lm {
                 , callback(std::move(callback))
             {}
 
-            constexpr inline bool visit(std::string_view& sv) const& noexcept {
-                impl::skip(sv);
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
+                skipper.skip(sv);
                 std::string_view save = sv;
-                if (base.visit(sv)) {
+                if (base.visit(sv, skipper)) {
                     callback(save.substr(0, save.size() - sv.size()));
                     return true;
                 }
@@ -446,13 +493,13 @@ namespace lm {
         };
 
         struct endtype_ final : public impl::parser_base<endtype_> {
-            constexpr inline bool visit(std::string_view& sv) const& noexcept {
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
                 return sv.empty();
             }
         };
 
         struct emptytype_ final : public impl::parser_base<emptytype_> {
-            constexpr inline bool visit(std::string_view&) const& noexcept {
+            constexpr inline bool visit(std::string_view& sv, Skipper& skipper) const& noexcept {
                 return true;
             }
         };
@@ -600,8 +647,8 @@ namespace lm {
     /// @param[in] parser The parser to evaluate on \p input
     /// @returns true if the parser matched the input or false otherwise
     template <typename Parser>
-    constexpr bool parse(std::string_view input, Parser const& parser) noexcept {
-        return parser.visit(input);
+    constexpr bool parse(std::string_view input, Parser const& parser, Skipper& skipper = skws) noexcept {
+        return parser.visit(input, skipper);
     }
 
     /// @brief The parse function that takes \p input by reference
@@ -614,8 +661,8 @@ namespace lm {
     /// @param[in] parser The parser to evaluate on \p input
     /// @returns true if the parser matched the input or false otherwise
     template <typename Parser>
-    constexpr bool parse_ref(std::string_view& input, Parser const& parser) noexcept {
-        return parser.visit(input);
+    constexpr bool parse_ref(std::string_view& input, Parser const& parser, Skipper& skipper = skws) noexcept {
+        return parser.visit(input, skipper);
     }
 }
 
