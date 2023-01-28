@@ -65,3 +65,11 @@ To run the tests, run `make && ./a.out`.
 
 Look at [tests.cpp](tests/tests.cpp) and [http.cpp](tests/http.cpp) for more example code.
 
+# Skip whitespace and Lexer mode
+
+The parser automatically skip the whitespace between tokens, but in some cases you do not want to skip whitespace.
+For example, in lexer mode, if you to match an identifier such as `alpha_ >> *alnum_`, this will match the whole string `a b`,
+because when running the `>>` seq function, the space between `a` and `b` will get skipped, so the matched string is not you want.
+In this case, you have to write `lexeme_(alpha_ >> *alnum_)`, here the class `lexeme_` has skip whitespace feature disabled for all its sub parsers,
+so, you get a correct identifier `a`.
+
