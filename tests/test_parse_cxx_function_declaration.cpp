@@ -97,7 +97,7 @@ struct FunctionDeclarationTag {
     std::string args;
     std::string template_args;
 
-    std::vector<std::string_view> qualified_name_vector;
+    std::vector<std::string> qualified_name_vector;
 
     bool Parse(std::string input);
 
@@ -149,7 +149,7 @@ bool FunctionDeclarationTag::Parse(std::string input)
 {
     Init();
     auto push_var = [&](const std::string_view& sv){
-        qualified_name_vector.push_back(sv);
+        qualified_name_vector.push_back(std::string(sv));
     };
     auto set_args = [&](const std::string_view& sv){
         args = sv;
