@@ -38,6 +38,7 @@
 		<Unit filename="test_parse_cxx.cpp" />
 		<Unit filename="test_parse_cxx_function_declaration.cpp" />
 		<Unit filename="test_parse_hello_world.cpp" />
+		<Unit filename="test_parse_lexeme_identifier.cpp" />
 		<Unit filename="tests.cpp" />
 		<Unit filename="tests_fill_struct_field.cpp" />
 		<Extensions />
