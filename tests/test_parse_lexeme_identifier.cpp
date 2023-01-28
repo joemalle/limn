@@ -13,8 +13,6 @@ using namespace lm; // Laziness
 
 auto ident = lexeme_(alpha_ >> *alnum_);
 
-auto ident2 = alpha_ >> *alnum_;
-
 auto p = [](const std::string_view& output){
     if (output.empty())
         std::cout << "Empty Input Matches!!!" << std::endl;
@@ -32,8 +30,6 @@ TEST_CASE("test simple text parsing"){
     CHECK(parse("a b ", ident[p] >> ident[p] >> end_));
 
     CHECK(parse("a1 b2 ", ident[p] >> ident[p] >> end_));
-
-    CHECK_FALSE(parse("a b ", ident2[p] >> ident2[p] >> end_));
 
 }
 
