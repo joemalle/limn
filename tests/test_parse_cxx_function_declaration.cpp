@@ -91,15 +91,6 @@ auto template_function_declaration_grammar = lit_("template") >> char_('<') >> t
 // demonstrate how to use the parser inside a class and fill the class members
 struct FunctionDeclarationTag {
 
-
-    struct scope_name_str
-    {
-        std::string_view ident;
-        std::string_view template_args;
-    };
-
-
-
     std::string return_type;
     std::string name;
     std::string scope;
