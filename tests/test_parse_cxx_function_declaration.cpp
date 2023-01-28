@@ -45,16 +45,16 @@ auto p = [](const std::string_view& output){
         std::cout << output << std::endl;
 };
 
-auto id = (+alnum_);
+auto ident = lexeme_(alpha_ >> *alnum_);
 
 // B<x = 5, y = int>
-auto scope_name = id >> opt_(char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>'));
+auto scope_name = ident >> opt_(char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>'));
 
 // A::B<x = 5, y = int>::C
 auto qualified_name = opt_(lit_("::")) >> scope_name >> *( lit_("::") >> scope_name);
 
 
-auto template_single_arg = (lit_("class") | lit_("typename")) >> id >> opt_(char_('=') >> id);
+auto template_single_arg = (lit_("class") | lit_("typename")) >> ident >> opt_(char_('=') >> ident);
 auto template_arg_list = template_single_arg[p] >> *(char_(',') >> template_single_arg);
 
 constexpr
@@ -78,29 +78,42 @@ auto function_arg_list =  *function_single_arg >> *(char_(',') >> function_singl
 auto template_function_declaration_grammar = lit_("template") >> char_('<') >> template_arg_list[p] >> char_('>')
     >> +qualified_name[p] >> char_('(')[p] >> function_arg_list[p] >> char_(')')[p] >> char_(';');
 
-//    auto id = (+alnum_);
+//    auto ident = (+alnum_);
 //
 //    // B<x = 5, y = int>
-//    auto scope_name = id >> (char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>')  | empty_);
+//    auto scope_name = ident >> (char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>')  | empty_);
 //
 //    // A::B<x = 5, y = int>::C
 //    auto qualified_name = (lit_("::") | empty_) >> scope_name >> *( lit_("::") >> scope_name);
 //
 
 
+// demonstrate how to use the parser inside a class and fill the class members
 struct FunctionDeclarationTag {
+
+
+    struct scope_name_str
+    {
+        std::string_view ident;
+        std::string_view template_args;
+    };
+
+
 
     std::string return_type;
     std::string name;
     std::string scope;
     std::string args;
+    std::string template_args;
 
-    std::vector<std::string> qualified_name_vector;
+    std::vector<std::string_view> qualified_name_vector;
 
-    //bool Parse(std::string input);
+    bool Parse(std::string input);
 
     void SetReturnType(const std::string_view& sv) {return_type = sv;}
-    void PushQualifiedName(const std::string_view& sv) {qualified_name_vector.push_back(std::string(sv));}
+    void PushQualifiedName(const std::string_view& sv) {
+        qualified_name_vector.push_back(std::string(sv));
+    }
     void SetArgs(const std::string_view& sv) {args = sv;}
 
     void Finish()
@@ -108,53 +121,86 @@ struct FunctionDeclarationTag {
         std::cout << "Finish function:" << std::endl;
         for (auto item : qualified_name_vector)
             std::cout << item << std::endl;
+
+        // the last item of the qualified_name_vector is the function name
+        // "A::B<m>::C X::Y<u>::Z();
+        // in the above case, the "Z" is the function, it is defined in the scope "X::Y<u>::"
+        // and has the return type "A::B<m>::C"
+
+        if (qualified_name_vector.size() == 0)
+            return;
+
+        std::string last_scope_name = std::string(qualified_name_vector.back());
+        if (last_scope_name.length() > 0)
+        {
+            std::string_view ident_str;
+            std::string_view template_args_str;
+            // B<x = 5, y = int>
+            auto scope_name = ident[ident_str] >> opt_(char_('<') >> action_(&ReadTemplateSpecializationParameters)[template_args_str] >> char_('>'));
+            parse(last_scope_name, scope_name);
+            name = std::string(ident_str);
+            template_args = std::string(template_args_str);
+        }
     }
 
-    bool Parse(std::string input);
+    // clear the member variables
+    void Init()
+    {
+        return_type.clear();
+        name.clear();
+        scope.clear();
+        args.clear();
+    }
 };
 
 
 bool FunctionDeclarationTag::Parse(std::string input)
 {
-    auto push_var = [&](const std::string_view& sv){qualified_name_vector.push_back(std::string(sv));};
-    auto set_args = [&](const std::string_view& sv){args = sv;};
+    Init();
+    auto push_var = [&](const std::string_view& sv){
+        qualified_name_vector.push_back(sv);
+    };
+    auto set_args = [&](const std::string_view& sv){
+        args = sv;
+    };
+    auto ident = lexeme_(alpha_ >> *alnum_);
 
+    // B<x = 5, y = int>
+    auto scope_name = ident[p] >> opt_(char_('<') >> action_(&ReadTemplateSpecializationParameters) >> char_('>'));
+
+    // A::B<x = 5, y = int>::C
+    auto qualified_name = opt_(lit_("::")) >> scope_name >> *( lit_("::") >> scope_name);
+
+    std::cout << "start parse!!!" << std::endl;
     auto function_declaration = opt_(lit_("const"))
         >> +(qualified_name[push_var] >> opt_(pointer_reference_const_qualifier))
         >> char_('(') >> function_arg_list[set_args] >> char_(')')>> char_(';');
-
     if (parse(input, function_declaration >> end_) == true)
     {
         Finish();
+        return true;
     }
     else
     {
         std::cout << "failed!!!" << std::endl;
         return false;
     }
-
-    return true;
 }
 
 
 TEST_CASE("parrsing the C++ function declaration") {
-
-//    CHECK(parse("int sum (int x, int y);", function_declaration));
-//    CHECK(parse("int* sum (int x, int y);", function_declaration));
-//    CHECK(parse("T A::B::fun();", function_declaration >> end_));
-//    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
-//    CHECK(parse("A::B X::Y::fun();", function_declaration >> end_));
-//    CHECK(parse("T U X A::B::C();", function_declaration >> end_));
-//    CHECK(parse("T U X A::B::C(T x = C, T y, D* u);", function_declaration >> end_));
-//    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
-//    CHECK(parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);", function_declaration >> end_));
-//    CHECK(parse("A::B<m>::C X();", function_declaration >> end_));
-//    std::cout << "print vector:" << std::endl;
-//    Finish();
-
     FunctionDeclarationTag f;
+    CHECK(f.Parse("int sum (int x, int y);"));
+    CHECK(f.Parse("int* sum (int x, int y);"));
+    CHECK(f.Parse("T A::B::fun();"));
+    CHECK(f.Parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);"));
+    CHECK(f.Parse("A::B X::Y::fun();"));
+    CHECK(f.Parse("T U X A::B::C();"));
+    CHECK(f.Parse("T U X A::B::C(T x = C, T y, D* u);"));
+    CHECK(f.Parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);"));
+    CHECK(f.Parse("T A::B<x = 5, y = int>::fun(T x = 5, T y, unsigned int u = 6);"));
+    CHECK(f.Parse("A::B<m>::C X();"));
     CHECK(f.Parse("A::B<m>::C X::Y<u>::Z();"));
-
 }
 
 }  // unnamed namespace
