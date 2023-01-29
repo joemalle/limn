@@ -91,26 +91,20 @@ auto template_function_declaration_grammar = lit_("template") >> char_('<') >> t
 // demonstrate how to use the parser inside a class and fill the class members
 struct FunctionDeclarationTag {
 
-    std::string return_type;
-    std::string name;
-    std::string scope;
-    std::string args;
-    std::string template_args;
+    std::string_view return_type;
+    std::string_view name;
+    std::string_view scope;
+    std::string_view args;
+    std::string_view template_args;
 
-    std::vector<std::string> qualified_name_vector;
+    std::vector<std::string_view> qualified_name_vector;
 
-    bool Parse(std::string input);
-
-    void SetReturnType(const std::string_view& sv) {return_type = sv;}
-    void PushQualifiedName(const std::string_view& sv) {
-        qualified_name_vector.push_back(std::string(sv));
-    }
-    void SetArgs(const std::string_view& sv) {args = sv;}
+    bool Parse(std::string_view input);
 
     void Finish()
     {
         std::cout << "Finish function:" << std::endl;
-        for (auto item : qualified_name_vector)
+        for (auto & item : qualified_name_vector)
             std::cout << item << std::endl;
 
         // the last item of the qualified_name_vector is the function name
@@ -121,7 +115,7 @@ struct FunctionDeclarationTag {
         if (qualified_name_vector.size() == 0)
             return;
 
-        std::string last_scope_name = std::string(qualified_name_vector.back());
+        std::string_view last_scope_name = qualified_name_vector.back();
         if (last_scope_name.length() > 0)
         {
             std::string_view ident_str;
@@ -129,27 +123,28 @@ struct FunctionDeclarationTag {
             // B<x = 5, y = int>
             auto scope_name = ident[ident_str] >> opt_(char_('<') >> action_(&ReadTemplateSpecializationParameters)[template_args_str] >> char_('>'));
             parse(last_scope_name, scope_name);
-            name = std::string(ident_str);
-            template_args = std::string(template_args_str);
+            name = ident_str;
+            template_args = template_args_str;
         }
     }
 
     // clear the member variables
     void Init()
     {
-        return_type.clear();
-        name.clear();
-        scope.clear();
-        args.clear();
+        qualified_name_vector.clear();
+        return_type = "";
+        name = "";
+        scope = "";
+        args = "";
     }
 };
 
 
-bool FunctionDeclarationTag::Parse(std::string input)
+bool FunctionDeclarationTag::Parse(std::string_view input)
 {
     Init();
     auto push_var = [&](const std::string_view& sv){
-        qualified_name_vector.push_back(std::string(sv));
+        qualified_name_vector.push_back(sv);
     };
     auto set_args = [&](const std::string_view& sv){
         args = sv;
