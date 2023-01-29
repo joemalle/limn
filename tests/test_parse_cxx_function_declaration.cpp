@@ -178,8 +178,7 @@ bool FunctionDeclarationTag::Parse(std::string input)
     }
 }
 
-
-TEST_CASE("parrsing the C++ function declaration") {
+TEST_CASE("parsing the C++ function declaration") {
     FunctionDeclarationTag f;
     CHECK(f.Parse("int sum (int x, int y);"));
     CHECK(f.Parse("int* sum (int x, int y);"));
